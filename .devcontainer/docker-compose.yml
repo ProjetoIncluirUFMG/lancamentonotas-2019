@@ -7,7 +7,7 @@ services:
       dockerfile: .devcontainer/Dockerfile
     command: sleep infinity
     ports: 
-      - "3306:3306"
+      - "80:8000"
     volumes:
       - ..:/workspace
       # This lets you avoid setting up Git again in the container
@@ -28,3 +28,14 @@ services:
       MYSQL_ROOT_PASSWORD: "password"
       MYSQL_USER: "lancamentoapp"
       MYSQL_PASSWORD: "gambigambi"
+    networks:
+      default: {}
+      static-network:
+        ipv4_address: "10.0.0.5"
+
+networks:
+  static-network:
+    internal: false
+    ipam:
+      config:
+        - subnet: "10.0.0.0/24"
