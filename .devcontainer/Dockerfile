@@ -24,7 +24,7 @@ RUN apt-get update \
     # Install pylint
     && pip install pylint 
 
-    # Update Python environment based on requirements.txt (if presenet)
+# Update Python environment based on requirements.txt (if presenet)
 RUN pip install -r /tmp/pip-tmp/requirements.txt \
     && rm -rf /tmp/pip-tmp
 

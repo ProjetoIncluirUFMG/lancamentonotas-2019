@@ -20,7 +20,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # See https://docs.djangoproject.com/en/2.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'g91p5z1=k$*3dw#udbx)hhhsdzdj_(n=%(k9*uj$zk&co@6(bt'
+SECRET_KEY =  os.environ['SECRET_KEY']
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -76,11 +76,11 @@ WSGI_APPLICATION = 'lancanotas.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'fechamentoincluir',
-        'USER': 'lancamentoapp',
-        'PASSWORD': 'gambigambi',
-        'HOST': 'internaldb',
-        'PORT': '3306',
+        'NAME':  os.environ['DB_NAME'],
+        'USER': os.environ['DB_USER'],
+        'PASSWORD': os.environ['DB_PASS'],
+        'HOST': os.environ['DB_HOST'],
+        'PORT': os.environ['DB_PORT'],
     }
 }
 

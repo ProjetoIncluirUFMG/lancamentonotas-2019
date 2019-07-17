@@ -1,25 +1,36 @@
-version: '3'
+version: "3"
 
 services:
   app:
-    build: 
+    build:
       context: ..
       dockerfile: .devcontainer/Dockerfile
+    # Overrides default command so things don't shut down after the process ends.
     command: sleep infinity
-    ports: 
-      - "80:8000"
+    environment:
+      SECRET_KEY: 'secret'
+      DB_NAME: ''
+      DB_USER: ''
+      DB_PASS: ''
+      DB_HOST: ''
+      DB_HOST: ''
     volumes:
       - ..:/workspace
       # This lets you avoid setting up Git again in the container
       - ~/.gitconfig:/root/.gitconfig
-    # Overrides default command so things don't shut down after the process ends.
-    links: 
+    links:
       - internaldb
+    ports:
+      - "80:8000"
+    networks:
+      default: {}
+      static-network:
+        ipv4_address: "19.17.11.7"
   internaldb:
     image: mysql:5.7
     command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8 --collation-server=utf8_bin
     restart: unless-stopped
-    ports: 
+    ports:
       - "3306:3306"
     expose:
       - "3306"
@@ -31,11 +42,11 @@ services:
     networks:
       default: {}
       static-network:
-        ipv4_address: "10.0.0.5"
+        ipv4_address: "19.17.11.8"
 
 networks:
   static-network:
     internal: false
     ipam:
       config:
-        - subnet: "10.0.0.0/24"
+        - subnet: "19.17.11.0/24"
