@@ -22,7 +22,7 @@ RUN apt-get update \
     && apt-get -y install git procps lsb-release \
     #
     # Install pylint
-    && pip install pylint 
+    && pip install pylint autopep8
 
 # Update Python environment based on requirements.txt (if presenet)
 RUN pip install -r /tmp/pip-tmp/requirements.txt \

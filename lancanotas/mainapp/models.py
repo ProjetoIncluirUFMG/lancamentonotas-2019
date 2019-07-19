@@ -8,26 +8,6 @@
 from django.db import models
 
 
-class Administrador(models.Model):
-    id_admin = models.AutoField(primary_key=True)
-    nome_admin = models.CharField(max_length=100)
-    login_admin = models.CharField(max_length=100)
-    senha_admin = models.CharField(max_length=45)
-
-    class Meta:
-        managed = False
-        db_table = 'administrador'
-
-
-class Alimento(models.Model):
-    id_alimento = models.AutoField(primary_key=True)
-    nome_alimento = models.CharField(max_length=100)
-
-    class Meta:
-        managed = False
-        db_table = 'alimento'
-
-
 class Aluno(models.Model):
     id_aluno = models.AutoField(primary_key=True)
     nome_aluno = models.CharField(max_length=100)
@@ -72,17 +52,6 @@ class Atividade(models.Model):
         db_table = 'atividade'
 
 
-class Curso(models.Model):
-    id_curso = models.AutoField(primary_key=True)
-    nome_curso = models.CharField(max_length=45)
-    descricao_curso = models.CharField(max_length=300, blank=True, null=True)
-    status = models.IntegerField()
-
-    class Meta:
-        managed = False
-        db_table = 'curso'
-
-
 class DatasFuncionamento(models.Model):
     data_funcionamento = models.DateField(primary_key=True)
     id_periodo = models.ForeignKey(
@@ -109,40 +78,12 @@ class Disciplina(models.Model):
     id_disciplina = models.AutoField(primary_key=True)
     nome_disciplina = models.CharField(max_length=100)
     ementa_disciplina = models.CharField(max_length=300, blank=True, null=True)
-    id_curso = models.ForeignKey(
-        Curso, models.DO_NOTHING, db_column='id_curso')
+    id_curso = models.IntegerField()
     status = models.IntegerField()
 
     class Meta:
         managed = False
         db_table = 'disciplina'
-
-
-class DisciplinaPreRequisitos(models.Model):
-    id_disciplina = models.ForeignKey(
-        Disciplina, models.DO_NOTHING, db_column='id_disciplina', primary_key=True)
-    id_disciplina_pre_requisito = models.ForeignKey(
-        Disciplina, models.DO_NOTHING, db_column='id_disciplina_pre_requisito')
-
-    class Meta:
-        managed = False
-        db_table = 'disciplina_pre_requisitos'
-        unique_together = (('id_disciplina', 'id_disciplina_pre_requisito'),)
-
-
-class EscalaFrequenciaVoluntario(models.Model):
-    id_frequencia = models.IntegerField(primary_key=True)
-    data_funcionamento = models.ForeignKey(
-        DatasFuncionamento, models.DO_NOTHING, db_column='data_funcionamento')
-    hora_entrada = models.TimeField(blank=True, null=True)
-    hora_saida = models.TimeField(blank=True, null=True)
-    is_presente = models.IntegerField(blank=True, null=True)
-    id_voluntario = models.ForeignKey(
-        'Voluntario', models.DO_NOTHING, db_column='id_voluntario')
-
-    class Meta:
-        managed = False
-        db_table = 'escala_frequencia_voluntario'
 
 
 class Falta(models.Model):
@@ -160,17 +101,6 @@ class Falta(models.Model):
             ('id_falta', 'id_turma_aluno', 'data_funcionamento'),)
 
 
-class Log(models.Model):
-    id_log = models.AutoField(primary_key=True)
-    data_log = models.DateField()
-    tipo_tarefa = models.CharField(max_length=100)
-    nome_usuario = models.CharField(max_length=100)
-
-    class Meta:
-        managed = False
-        db_table = 'log'
-
-
 class NotaAluno(models.Model):
     id_nota = models.AutoField(primary_key=True)
     id_turma_aluno = models.ForeignKey(
@@ -184,32 +114,6 @@ class NotaAluno(models.Model):
         db_table = 'nota_aluno'
         unique_together = (
             ('id_nota', 'id_turma_aluno', 'id_atividades_turma'),)
-
-
-class Pagamento(models.Model):
-    id_pagamento = models.AutoField(primary_key=True)
-    valor_pago = models.FloatField()
-    situacao = models.IntegerField()
-    condicao = models.IntegerField()
-    tipo_isencao_pendencia = models.IntegerField(blank=True, null=True)
-    num_recibo = models.IntegerField(blank=True, null=True)
-
-    class Meta:
-        managed = False
-        db_table = 'pagamento'
-
-
-class PagamentoAlimentos(models.Model):
-    id_pagamento = models.ForeignKey(
-        Pagamento, models.DO_NOTHING, db_column='id_pagamento', primary_key=True)
-    id_alimento = models.ForeignKey(
-        Alimento, models.DO_NOTHING, db_column='id_alimento')
-    quantidade = models.IntegerField(blank=True, null=True)
-
-    class Meta:
-        managed = False
-        db_table = 'pagamento_alimentos'
-        unique_together = (('id_pagamento', 'id_alimento'),)
 
 
 class Periodo(models.Model):
@@ -227,17 +131,6 @@ class Periodo(models.Model):
     class Meta:
         managed = False
         db_table = 'periodo'
-
-
-class Permissao(models.Model):
-    id_permissao = models.AutoField(primary_key=True)
-    titulo_permissao = models.CharField(max_length=45)
-    controller = models.CharField(max_length=45)
-    action = models.CharField(max_length=45)
-
-    class Meta:
-        managed = False
-        db_table = 'permissao'
 
 
 class Turma(models.Model):
@@ -265,8 +158,7 @@ class TurmaAlunos(models.Model):
         Turma, models.DO_NOTHING, db_column='id_turma')
     id_aluno = models.ForeignKey(
         Aluno, models.DO_NOTHING, db_column='id_aluno')
-    id_pagamento = models.ForeignKey(
-        Pagamento, models.DO_NOTHING, db_column='id_pagamento')
+    id_pagamento = models.IntegerField()
     aprovado = models.IntegerField(blank=True, null=True)
     liberacao = models.IntegerField(blank=True, null=True)
 
@@ -285,92 +177,3 @@ class TurmaAtividades(models.Model):
     class Meta:
         managed = False
         db_table = 'turma_atividades'
-
-
-class Usuario(models.Model):
-    id_usuario = models.AutoField(primary_key=True)
-    login_usuario = models.CharField(max_length=100)
-    senha_usuario = models.CharField(max_length=100)
-    id_voluntario = models.ForeignKey(
-        'Voluntario', models.DO_NOTHING, db_column='id_voluntario')
-
-    class Meta:
-        managed = False
-        db_table = 'usuario'
-        unique_together = (('id_usuario', 'id_voluntario'),)
-
-
-class UsuarioPermissoes(models.Model):
-    id_usuario = models.ForeignKey(
-        Usuario, models.DO_NOTHING, db_column='id_usuario', primary_key=True)
-    id_voluntario = models.ForeignKey(
-        Usuario, models.DO_NOTHING, db_column='id_voluntario')
-    id_usuario_permissao = models.ForeignKey(
-        Permissao, models.DO_NOTHING, db_column='id_usuario_permissao')
-
-    class Meta:
-        managed = False
-        db_table = 'usuario_permissoes'
-        unique_together = (
-            ('id_usuario', 'id_voluntario', 'id_usuario_permissao'),)
-
-
-class Voluntario(models.Model):
-    id_voluntario = models.AutoField(primary_key=True)
-    nome = models.CharField(max_length=200)
-    cpf = models.CharField(max_length=15)
-    rg = models.CharField(max_length=20, blank=True, null=True)
-    data_nascimento = models.DateField(blank=True, null=True)
-    email = models.CharField(max_length=45, blank=True, null=True)
-    formacao = models.CharField(max_length=45, blank=True, null=True)
-    profissao = models.CharField(max_length=45, blank=True, null=True)
-    telefone_fixo = models.CharField(max_length=45, blank=True, null=True)
-    telefone_celular = models.CharField(max_length=45, blank=True, null=True)
-    endereco = models.CharField(max_length=200, blank=True, null=True)
-    bairro = models.CharField(max_length=100, blank=True, null=True)
-    cep = models.CharField(max_length=20, blank=True, null=True)
-    cidade = models.CharField(max_length=100)
-    estado = models.CharField(max_length=100)
-    complemento = models.CharField(max_length=45, blank=True, null=True)
-    numero = models.IntegerField(blank=True, null=True)
-    funcao_informatica = models.CharField(
-        max_length=100, blank=True, null=True)
-    funcao_rh = models.CharField(max_length=100, blank=True, null=True)
-    funcao_secretaria = models.CharField(max_length=100, blank=True, null=True)
-    funcao_marketing = models.CharField(max_length=100, blank=True, null=True)
-    carga_horaria = models.CharField(max_length=100, blank=True, null=True)
-    status = models.IntegerField(blank=True, null=True)
-    data_inicio = models.DateField(blank=True, null=True)
-    data_desligamento = models.DateField(blank=True, null=True)
-    motivo_desligamento = models.CharField(
-        max_length=300, blank=True, null=True)
-    disponibilidade = models.TextField(blank=True, null=True)
-    conhecimento = models.TextField(blank=True, null=True)
-
-    class Meta:
-        managed = False
-        db_table = 'voluntario'
-
-
-class VoluntarioDisciplinas(models.Model):
-    id_voluntario = models.ForeignKey(
-        Voluntario, models.DO_NOTHING, db_column='id_voluntario', primary_key=True)
-    id_disciplina = models.ForeignKey(
-        Disciplina, models.DO_NOTHING, db_column='id_disciplina')
-
-    class Meta:
-        managed = False
-        db_table = 'voluntario_disciplinas'
-        unique_together = (('id_voluntario', 'id_disciplina'),)
-
-
-class VoluntarioTurmas(models.Model):
-    id_voluntario = models.ForeignKey(
-        Voluntario, models.DO_NOTHING, db_column='id_voluntario', primary_key=True)
-    id_turma = models.ForeignKey(
-        Turma, models.DO_NOTHING, db_column='id_turma')
-
-    class Meta:
-        managed = False
-        db_table = 'voluntario_turmas'
-        unique_together = (('id_voluntario', 'id_turma'),)
