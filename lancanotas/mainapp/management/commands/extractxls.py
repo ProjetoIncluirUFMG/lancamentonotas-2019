@@ -62,7 +62,7 @@ class Command(BaseCommand):
             self.stdout.write(self.style.SUCCESS(
                 '[3/5] Identificados %d alunos' % len(alunos)))
             atividades = list()
-            for letter in self.char_range('c', 'i'):
+            for letter in self.char_range('C', 'I'):
                 if sheet['%s6' % letter].value is None:
                     break
                 value = sheet['%s6' % letter].value.strip()
@@ -82,9 +82,18 @@ class Command(BaseCommand):
                         turmaatividades__id_turma__nome_turma='CAP201', turmaatividades__id_turma__id_periodo__is_atual=1)
                     raise CommandError(
                         'Atividade "%s" não encontrada no banco de dados!' % value)
-
             self.stdout.write(self.style.SUCCESS(
                 '[3/5] Identificadas %d atividades' % len(atividades)))
+            if len(atividades) == 0:
+                self.stdout.write(self.style.WARNING(
+                    '[3/5] Não foram encontradas atividades na planilha nem no banco, criando uma'))
+                atividade = Atividade(data_funcionamento=DatasFuncionamento.objects.get(
+                    data_funcionamento__year=2019, data_funcionamento__month=7, data_funcionamento__day=20), nome='Nota Final', descricao='Lançamento automático', valor_total=100)
+                atividade.save()
+                turmaatividade = TurmaAtividades(
+                    id_turma=turma, id_atividade=atividade)
+                turmaatividade.save()
+                atividades.append({'ent': turmaatividade, 'pos': 'J'})
             for aluno in alunos:
                 for atividade in atividades:
                     if NotaAluno.objects.filter(
