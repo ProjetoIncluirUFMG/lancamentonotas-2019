@@ -20,7 +20,7 @@ Aplicação provisória para lançamento de notas.
 
 ## Executando o comando
 
-O comando ```python manage.py importnotas``` lê um arquivo CSV com o nome do código de uma turma ('ART201', por ex.), devidamente formatado desta forma:
+O comando ```python manage.py importnotas``` lê um arquivo CSV com o nome do código de uma turma ('ART201.csv', por ex.), devidamente formatado desta forma:
 ```csv
 Nome do Aluno, [Atividade(s)], Nota Final
 João, [1,2...], 90
