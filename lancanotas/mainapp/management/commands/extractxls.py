@@ -4,6 +4,7 @@ import itertools
 from django.core.management.base import BaseCommand, no_translations, CommandError
 from django.db import transaction
 from openpyxl import load_workbook
+from unidecode import unidecode
 
 from mainapp.models import (Atividade, DatasFuncionamento, Turma,
                             TurmaAtividades, Aluno, Periodo, NotaAluno, TurmaAlunos)
@@ -39,15 +40,16 @@ class Command(BaseCommand):
                 '[1/5] Turma %s encontrada' % turma.nome_turma))
             sheet = wb[sheetname]
             # Checando se as âncoras do modelo padrão estão presentes
-            if not (sheet['B6'].value.strip() == 'Nome da Atividade' and sheet['B8'].value.strip() == 'Nome do Aluno' and sheet['J6'].value.strip() == 'Total'):
-                raise CommandError('Arquivo não conforma com modelo padrão!')
+            if not (sheet['B6'].value is not None and sheet['B6'].value.strip() == 'Nome da Atividade' and sheet['B8'].value is not None and sheet['B8'].value.strip() == 'Nome do Aluno'):
+                raise CommandError('Arquivo não conforma com modelo padrão!\n Âncoras: %s, %s' % (
+                    sheet['B6'].value, sheet['B8'].value))
             self.stdout.write(self.style.SUCCESS(
                 '[2/5] Documento bem-formatado'))
             alunos = list()
             for num in itertools.count(10):
                 if sheet['B%d' % num].value is None:
                     break
-                value = sheet['B%d' % num].value.strip().upper()
+                value = unidecode(sheet['B%d' % num].value.strip().upper())
                 if value == '':
                     break
                 try:
@@ -61,13 +63,13 @@ class Command(BaseCommand):
                         'Aluno %s não existe no banco de dados!' % value)
             self.stdout.write(self.style.SUCCESS(
                 '[3/5] Identificados %d alunos' % len(alunos)))
+            self.stdout.write(self.style.WARNING(
+                'Atividades desta turma no banco de dados: %s' % list(map(lambda ativ: ativ.nome, Atividade.objects.filter(
+                    turmaatividades__id_turma=turma, turmaatividades__id_turma__id_periodo=periodo)))))
             atividades = list()
-            for letter in self.char_range('C', 'I'):
-                if sheet['%s6' % letter].value is None:
-                    break
-                value = sheet['%s6' % letter].value.strip()
-                if value == '':
-                    break
+            letter = 'C'
+            value =  sheet['%s6' % letter].value
+            while sheet['%s6' % letter].value is not None and sheet['%s6' % letter].value.strip() != '' and sheet['%s6' % letter].value.strip() != 'Total':
                 try:
                     atividade = TurmaAtividades.objects.get(
                         id_atividade__nome=value, id_turma=turma)
@@ -75,13 +77,12 @@ class Command(BaseCommand):
                     self.stdout.write(
                         '\tAtividade "%s" encontrada (%s)' % (atividade.id_atividade.nome, '%s6' % num))
                 except TurmaAtividades.DoesNotExist:
-                    self.stdout.write(self.style.WARNING(
-                        'Atividades desta turma no banco de dados: %s' % list(map(lambda ativ: ativ.nome, Atividade.objects.filter(
-                            turmaatividades__id_turma=turma, turmaatividades__id_turma__id_periodo=periodo)))))
                     Atividade.objects.filter(
                         turmaatividades__id_turma__nome_turma='CAP201', turmaatividades__id_turma__id_periodo__is_atual=1)
                     raise CommandError(
                         'Atividade "%s" não encontrada no banco de dados!' % value)
+                letter = chr(ord(letter) + 1)
+                value =  sheet['%s6' % letter].value
             self.stdout.write(self.style.SUCCESS(
                 '[3/5] Identificadas %d atividades' % len(atividades)))
             if len(atividades) == 0:
