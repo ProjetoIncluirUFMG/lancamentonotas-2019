@@ -85,7 +85,7 @@ class Command(BaseCommand):
 
             for aluno in alunos:
                 valor_nota = round(
-                    sheet['%s%d' % (coluna_notas, aluno['pos'])].value, 1)
+                    float(sheet['%s%d' % (coluna_notas, aluno['pos'])].value), 1)
                 nota = NotaAluno(
                     id_turma_aluno=aluno['ent'], id_atividades_turma=turmaatividade, valor_nota=valor_nota)
                 nota.save()
