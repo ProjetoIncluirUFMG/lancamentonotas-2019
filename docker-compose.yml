@@ -14,8 +14,6 @@ services:
       DB_PORT: "3306"
     volumes:
       - .:/workspace
-      # This lets you avoid setting up Git again in the container
-      - ~/.gitconfig:/root/.gitconfig
     links:
       - internaldb
     ports:
