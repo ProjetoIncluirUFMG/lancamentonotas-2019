@@ -19,6 +19,7 @@ def muda_turmas(apps, schema_editor):
     mudaturma('INFC101', 'INFC102', 'MARIA VITÓRIA LEISTER LOPES')
     mudaturma('INA203', 'INA202', 'THIAGO AUGUSTO SANTOS')
     mudaturma('INB102', 'INB101', 'JOAO VICTOR PEREIRA DE SA')
+    mudaturma('INE201','INE101','BRUNA LUIZA BATISTA BORGES')
 
 
 class Migration(migrations.Migration):

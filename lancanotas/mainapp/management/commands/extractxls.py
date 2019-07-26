@@ -4,7 +4,6 @@ import itertools
 from django.core.management.base import BaseCommand, no_translations, CommandError
 from django.db import transaction
 from openpyxl import load_workbook
-from unidecode import unidecode
 
 from mainapp.models import (Atividade, DatasFuncionamento, Turma,
                             TurmaAtividades, Aluno, Periodo, NotaAluno, TurmaAlunos)
@@ -31,27 +30,36 @@ class Command(BaseCommand):
             filename=options['excel_file'], data_only=True)
         sheets = wb.sheetnames
         for sheetname in sheets:
-            if not Turma.objects.filter(nome_turma=sheetname, id_periodo=periodo).exists():
-                raise CommandError(
-                    'Turma %s não encontrada no banco de dados!' % sheetname)
-            turma = Turma.objects.get(
-                nome_turma=sheetname, id_periodo=periodo)
-            self.stdout.write(self.style.SUCCESS(
-                'Turma encontrada %s:' % turma.nome_turma))
+            sheet = wb[sheetname]
 
             # Checando se as âncoras do modelo padrão estão presentes
-            sheet = wb[sheetname]
-            if not (sheet['B6'].value is not None and sheet['B6'].value.strip() == 'Nome da Atividade' and sheet['B8'].value is not None and sheet['B8'].value.strip() == 'Nome do Aluno'):
+            if sheet['B4'].value is None or sheet['A9'].value is None:
                 raise CommandError('Arquivo não conforma com modelo padrão!\n Âncoras: %s, %s' % (
-                    sheet['B6'].value, sheet['B8'].value))
+                    sheet['B4'].value, sheet['A9'].value))
+            linha_notas = 4
+            while sheet['A%d' % linha_notas].value is None or sheet['A%d' % linha_notas].value.strip() != 'Nome dos Alunos' or linha_notas > 15:
+                linha_notas += 1
+            if sheet['A%d' % linha_notas].value.strip() != 'Nome dos Alunos' or sheet['A%d' % (linha_notas+1)].value is not None or sheet['A%d' % (linha_notas+2)].value is None:
+                raise CommandError(
+                    'Arquivo não conforma com modelo padrão!\n Âncora: %s' % sheet['A%d' % linha_notas].value)
             self.stdout.write(self.style.SUCCESS(
-                '\t[1/7] Documento bem-formatado'))
+                '\t[0/7] Documento bem-formatado'))
+
+            nome_turma = ''.join(sheet['B4'].value.strip().split(' '))
+            try:
+                turma = Turma.objects.get(
+                    nome_turma=nome_turma, id_periodo=periodo)
+                self.stdout.write(self.style.SUCCESS(
+                    '\t[1/7] Turma encontrada %s:' % turma.nome_turma))
+            except Turma.DoesNotExist:
+                raise CommandError(
+                    'Turma %s não encontrada no banco de dados!' % nome_turma)
 
             alunos = list()
-            for num in itertools.count(10):
-                if sheet['B%d' % num].value is None:
+            for num in itertools.count(linha_notas+2):
+                if sheet['A%d' % num].value is None:
                     break
-                value = sheet['B%d' % num].value.strip().upper()
+                value = sheet['A%d' % num].value.strip().upper()
                 if value == '':
                     break
                 try:
@@ -61,16 +69,19 @@ class Command(BaseCommand):
                 except TurmaAlunos.DoesNotExist:
                     raise CommandError(
                         'Aluno %s não existe no banco de dados!' % value)
+                except TurmaAlunos.MultipleObjectsReturned:
+                    raise CommandError(
+                        'Aluno %s está ambíguo no banco de dados!' % value)
             self.stdout.write(self.style.SUCCESS(
                 '\t[2/6] Identificados %d alunos' % len(alunos)))
 
-            coluna_notas = 'C'
-            celula = sheet['%s6' % coluna_notas].value
+            coluna_notas = 'A'
+            celula = sheet['%s%d' % (coluna_notas, linha_notas)].value
             # O coluna_notas<20 é apenas um sanity check para evitar timeouts
-            while (sheet['%s6' % coluna_notas].value is None or sheet['%s6' % coluna_notas].value.strip() != 'Total') and (ord(coluna_notas) - ord('C')) < 20:
+            while (sheet['%s%d' % (coluna_notas, linha_notas)].value is None or sheet['%s%d' % (coluna_notas, linha_notas)].value.strip() != 'Total (100 pts)') and (ord(coluna_notas) - ord('A')) < 20:
                 coluna_notas = chr(ord(coluna_notas) + 1)
-                celula = sheet['%s6' % coluna_notas].value
-            if celula.strip() != 'Total':
+                celula = sheet['%s%d' % (coluna_notas, linha_notas)].value
+            if celula.strip() != 'Total (100 pts)':
                 raise CommandError(
                     'Coluna com notas finais não foi encontrada!')
             self.stdout.write(self.style.SUCCESS(
@@ -118,20 +129,28 @@ class Command(BaseCommand):
 # Funções-gambiarra para encontrar e corrigir erros nas planilhas
 
 def acha(aluno, turma):
-    turmaalunos = TurmaAlunos.objects.filter(id_aluno__nome_aluno__icontains=aluno, id_turma__nome_turma=turma, id_turma__id_periodo__is_atual=1)
+    turmaalunos = TurmaAlunos.objects.filter(
+        id_aluno__nome_aluno__icontains=aluno, id_turma__nome_turma=turma, id_turma__id_periodo__is_atual=1)
     return list(map(lambda ta: (ta.id_aluno.nome_aluno, ta.id_turma.nome_turma), turmaalunos))
 
+
 def turmas(aluno):
-    turmaalunos = TurmaAlunos.objects.filter(id_aluno__nome_aluno__icontains=aluno, id_turma__id_periodo__is_atual=1)
+    turmaalunos = TurmaAlunos.objects.filter(
+        id_aluno__nome_aluno__icontains=aluno, id_turma__id_periodo__is_atual=1)
     return list(map(lambda ta: (ta.id_aluno.nome_aluno, ta.id_turma.nome_turma), turmaalunos))
+
 
 def mudaturma(oldturma, newturma, nome):
     aluno = Aluno.objects.get(nome_aluno__icontains=nome)
-    velho = TurmaAlunos.objects.get(id_aluno=aluno, id_turma__nome_turma=oldturma, id_turma__id_periodo__is_atual=1)
-    novo = TurmaAlunos(id_aluno=aluno, id_turma=Turma.objects.get(nome_turma=newturma, id_periodo__is_atual=1), id_pagamento=velho.id_pagamento, aprovado=velho.aprovado, liberacao=velho.liberacao)
+    velho = TurmaAlunos.objects.get(
+        id_aluno=aluno, id_turma__nome_turma=oldturma, id_turma__id_periodo__is_atual=1)
+    novo = TurmaAlunos(id_aluno=aluno, id_turma=Turma.objects.get(nome_turma=newturma, id_periodo__is_atual=1),
+                       id_pagamento=velho.id_pagamento, aprovado=velho.aprovado, liberacao=velho.liberacao)
     velho.delete()
     novo.save()
     return turmas(nome)
 
+
 def limpa():
-    NotaAluno.objects.filter(id_turma_aluno__id_turma__id_periodo__is_atual=1).delete()
+    NotaAluno.objects.filter(
+        id_turma_aluno__id_turma__id_periodo__is_atual=1).delete()
