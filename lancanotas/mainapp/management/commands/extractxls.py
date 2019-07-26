@@ -51,7 +51,7 @@ class Command(BaseCommand):
             for num in itertools.count(10):
                 if sheet['B%d' % num].value is None:
                     break
-                value = unidecode(sheet['B%d' % num].value.strip().upper())
+                value = sheet['B%d' % num].value.strip().upper()
                 if value == '':
                     break
                 try:
@@ -113,3 +113,25 @@ class Command(BaseCommand):
         """Generates the characters from `c1` to `c2`, inclusive."""
         for c in range(ord(c1), ord(c2)+1):
             yield chr(c)
+
+
+# Funções-gambiarra para encontrar e corrigir erros nas planilhas
+
+def acha(aluno, turma):
+    turmaalunos = TurmaAlunos.objects.filter(id_aluno__nome_aluno__icontains=aluno, id_turma__nome_turma=turma, id_turma__id_periodo__is_atual=1)
+    return list(map(lambda ta: (ta.id_aluno.nome_aluno, ta.id_turma.nome_turma), turmaalunos))
+
+def turmas(aluno):
+    turmaalunos = TurmaAlunos.objects.filter(id_aluno__nome_aluno__icontains=aluno, id_turma__id_periodo__is_atual=1)
+    return list(map(lambda ta: (ta.id_aluno.nome_aluno, ta.id_turma.nome_turma), turmaalunos))
+
+def mudaturma(oldturma, newturma, nome):
+    aluno = Aluno.objects.get(nome_aluno__icontains=nome)
+    velho = TurmaAlunos.objects.get(id_aluno=aluno, id_turma__nome_turma=oldturma, id_turma__id_periodo__is_atual=1)
+    novo = TurmaAlunos(id_aluno=aluno, id_turma=Turma.objects.get(nome_turma=newturma, id_periodo__is_atual=1), id_pagamento=velho.id_pagamento, aprovado=velho.aprovado, liberacao=velho.liberacao)
+    velho.delete()
+    novo.save()
+    return turmas(nome)
+
+def limpa():
+    NotaAluno.objects.filter(id_turma_aluno__id_turma__id_periodo__is_atual=1).delete()
